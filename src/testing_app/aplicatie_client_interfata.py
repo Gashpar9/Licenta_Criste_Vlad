@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import requests
 import random
+import numpy as np
 
 
 
@@ -37,6 +38,8 @@ def send_request(sample, model):
 
     return response.json(), total_time
 
+
+
 # Aplicatia cu interfata grafica pentru testarea timpului de detectie al IDS-ului
 
 class IDSApp:
@@ -68,11 +71,14 @@ class IDSApp:
         self.result_label_prediction.pack(anchor='center', pady=10)
 
         self.result_label_time = tk.Label(root, text="")
-        self.result_label_time.pack(anchor='center', pady=5)
+        self.result_label_time.pack(anchor='center', pady=10)
+
+        self.result_label_avg_operations_per_second = tk.Label(root, text="")
+        self.result_label_avg_operations_per_second.pack(anchor='center', pady=5)
 
     def start_test(self):
         classifier = self.classifier_var.get()
-        total_time = 0.0
+        all_times = []
         predictions = []
 
 
@@ -82,12 +88,16 @@ class IDSApp:
         for i in random_indices:
             sample = X_test[i].tolist()
             result, time_taken = send_request(sample, classifier)
-            predictions.append(result['prediction'])
-            total_time += time_taken
 
-        average_time = total_time / 10
+            predictions.append(result['prediction'])
+            all_times.append(time_taken)
+
+        average_time = np.mean(all_times)
+        std_time = np.std(all_times)
+
         self.result_label_prediction.config(text=f"Rezultat (1: Trafic normal, -1: Trafic suspicios, 0: Testare fără algoritm): {result['prediction']}")
-        self.result_label_time.config(text=f"Timp de detecție: {average_time:.6f} secunde")
+        self.result_label_time.config(text=f"Timp de detecție: {average_time:.6f} secunde ± {std_time:.6f} secunde")
+        self.result_label_avg_operations_per_second.config(text=f"Număr mediu de operații pe secundă: {1 / average_time:.2f}")
 
 
 # Bucla principala de rulare a aplicatiei cu interfata
